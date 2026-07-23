@@ -64,6 +64,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
 
 
 async def main():
+    print("🚀 Запуск парсера...")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
@@ -71,12 +72,18 @@ async def main():
         )
         page = await context.new_page()
 
+        print(f"🌐 Переходим по ссылке: {WEB_URL}")
         await page.goto(WEB_URL, wait_until="networkidle")
-        await page.wait_for_timeout(3000)
+        
+        # Увеличили ожидание до 10 секунд на случай защиты Cloudflare
+        print("⏳ Ждем 10 секунд прогрузки страницы...")
+        await page.wait_for_timeout(10000)
 
         content = await page.content()
+        print(f"📄 Размер полученного HTML: {len(content)} символов")
 
         raw_keys = re.findall(r"vless://[^\s<\"']+", content)
+        print(f"🔍 Найдено сырых ссылок: {len(raw_keys)}")
 
         clean_keys = []
         for key in raw_keys:
@@ -88,10 +95,12 @@ async def main():
                 clean_keys.append(key)
 
         unique_keys = list(dict.fromkeys(clean_keys))
+        print(f"✅ Уникальных чистых серверов после фильтра: {len(unique_keys)}")
 
         await browser.close()
 
         if not unique_keys:
+            print("❌ Серверы не найдены! Выход.")
             exit(1)
 
         renamed_keys = [
@@ -100,9 +109,15 @@ async def main():
         ]
 
         today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
+        
+        uploaded_bytes = 83732298752 
+        downloaded_bytes = 0  
+        total_bytes = 0       
+        expire_timestamp = 1807045200 
 
         header = [
-            "# profile-title: 💣ПРИВАТ (VPN + БС)",
+            "# profile-title: 💣ПРИВАТ - @wlunlocker",
+            f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
             "# profile-update-interval: 1",
             "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
             "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
@@ -116,6 +131,8 @@ async def main():
 
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
             f.write(file_content)
+        
+        print(f"💾 Файл успешно сохранен! Записано серверов: {len(renamed_keys)}")
 
 
 if __name__ == "__main__":
