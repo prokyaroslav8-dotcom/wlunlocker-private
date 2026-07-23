@@ -44,6 +44,9 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         flag = "🇷🇺"
         country = "Все страны"
 
+    if country == "Все страны":
+        is_auto = True
+
     if is_auto:
         flag_prefix = f"{flag}⚡ "
     else:
