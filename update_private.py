@@ -16,19 +16,47 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         raw_tag = ""
 
     decoded_name = urllib.parse.unquote(raw_tag)
+    lower_name = decoded_name.lower()
 
-    num_match = re.search(r"\d+", decoded_name)
-    num = num_match.group(0) if num_match else str(index)
+    is_auto = "авто" in lower_name
 
-    if "Белые списки" in decoded_name or "БС" in decoded_name:
-        new_name = f"🇷🇺Все страны - АВТО - БС #{num}"
-    elif "Автовыбор" in decoded_name:
-        new_name = f"⚡ Автовыбор #{num}"
+    if "белые" in lower_name or "бс" in lower_name:
+        mode = "БС"
     else:
-        new_name = f"💣 @wlunlocker | №{index}"
+        mode = "ЧС"
+
+    flags = re.findall(r"[\U0001F1E6-\U0001F1FF]{2}", decoded_name)
+
+    if "🇪🇺" in decoded_name or "европа" in lower_name:
+        flag = "🇪🇺"
+        country = "Европа"
+    elif flags and flags[0] != "🇷🇺":
+        flag = flags[0]
+        country_match = re.search(
+            r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-я]+)", decoded_name
+        )
+        country = (
+            country_match.group(1).capitalize()
+            if country_match
+            else "Все страны"
+        )
+    else:
+        flag = "🇷🇺"
+        country = "Все страны"
+
+    if is_auto:
+        flag_prefix = f"{flag}⚡ "
+    else:
+        flag_prefix = f"{flag} "
+
+    parts = [f"{flag_prefix}{country}", mode]
+
+    if is_auto:
+        parts.append("АВТО")
+
+    new_name = " - ".join(parts) + f" #{index}"
 
     encoded_name = urllib.parse.quote(new_name)
-
     return f"{base_url}#{encoded_name}"
 
 
