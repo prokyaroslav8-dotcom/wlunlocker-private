@@ -99,10 +99,14 @@ async def main():
             for i, key in enumerate(unique_keys)
         ]
 
-        today = datetime.now().strftime("%d.%m.%y")
+        today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
 
         header = [
-            "# profile-title: 💣ПРИВАТ - @wlunlocker",
+            "# profile-title: 💣ПРИВАТ (VPN + БС)",
+            "# profile-update-interval: 1",
+            "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
+            "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
+            "# support-url: https://t.me/wlunlocker",
             f"# last-update: {today}",
             f"# count: {len(renamed_keys)}",
             "",
