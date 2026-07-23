@@ -1,36 +1,42 @@
-import base64
+import asyncio
 from datetime import datetime
 import re
-import requests
+from playwright.async_api import async_playwright
 
-SUB_URL = "https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
+WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
 OUTPUT_FILE = "privateWLunlocker.txt"
 
 
-def fetch_and_format():
-    headers = {
-        "User-Agent": "v2rayN/6.23"  # Притворяемся VPN-клиентом, чтобы подписка отдалась без проблем
-    }
+async def main():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = await context.new_page()
 
-    try:
-        response = requests.get(SUB_URL, headers=headers, timeout=15)
-        response.raise_for_status()
-        raw_content = response.text.strip()
+        await page.goto(WEB_URL, wait_until="networkidle")
+        await page.wait_for_timeout(3000)
 
-        try:
-            missing_padding = len(raw_content) % 4
-            if missing_padding:
-                raw_content += "=" * (4 - missing_padding)
+        content = await page.content()
 
-            decoded_bytes = base64.b64decode(raw_content)
-            content = decoded_bytes.decode("utf-8", errors="ignore")
-        except Exception:
-            # Если это уже обычный текст без Base64:
-            content = raw_content
+        raw_keys = re.findall(r"vless://[^\s<\"']+", content)
 
-        keys = re.findall(r"(?:vless|vmess|trojan|ss)://[^\s]+", content)
+        clean_keys = []
+        for key in raw_keys:
+            if (
+                "HWID" not in key
+                and "устройства" not in key
+                and "0.0.0.0:1" not in key
+            ):
+                clean_keys.append(key)
 
-        unique_keys = list(dict.fromkeys(keys))
+        unique_keys = list(dict.fromkeys(clean_keys))
+
+        await browser.close()
+
+        if not unique_keys:
+            exit(1)
 
         today = datetime.now().strftime("%d.%m.%y")
 
@@ -46,14 +52,6 @@ def fetch_and_format():
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
             f.write(file_content)
 
-        print(
-            f"Успешно! Обновлено ключей: {len(unique_keys)}, дата: {today}"
-        )
-
-    except Exception as e:
-        print(f"Ошибка при обновлении подписки: {e}")
-        exit(1)
-
 
 if __name__ == "__main__":
-    fetch_and_format()
+    asyncio.run(main())
