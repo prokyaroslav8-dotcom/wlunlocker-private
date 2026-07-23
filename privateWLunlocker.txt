@@ -1,8 +1,6 @@
-# profile-title: 💣ПРИВАТНАЯ @wlunlocker
+# profile-title: 💣ПРИВАТ - @wlunlocker
 # last-update: 23.07.26
 # count: 20
-# profile-desc: Приватная подписка wlunlocker. Остальные подписки можно найти в нашем Telegram канале @wlunlocker.
-Спасибо за сервера: 67 VPN. 
 
 vless://e5afa6a0-a4a6-44e3-a3e0-e05b0c67cd02@150.241.83.19:443?type=tcp&security=reality&sni=www.mozilla.org&pbk=o7LGs0lx2kjB5r8cxHlm2bRMXyibLCjZbGN3b9mdBRw&sid=8eb78c765afb920a&fp=firefox&encryption=none&flow=xtls-rprx-vision#%F0%9F%87%AA%F0%9F%87%BA%E2%9A%A1%20%D0%95%D0%B2%D1%80%D0%BE%D0%BF%D0%B0%20-%20%D0%A7%D0%A1%20-%20%D0%90%D0%92%D0%A2%D0%9E%20%231
 vless://e5afa6a0-a4a6-44e3-a3e0-e05b0c67cd02@144.31.214.196:443?type=tcp&security=reality&sni=www.mozilla.org&pbk=8C9nYYjnHI6kJzjmuAFvMdGIz6LmPh89nwEC5ohLInQ&sid=9d8eaebbfb4ee87e&fp=firefox&encryption=none&flow=xtls-rprx-vision#%F0%9F%87%AA%F0%9F%87%BA%E2%9A%A1%20%D0%95%D0%B2%D1%80%D0%BE%D0%BF%D0%B0%20-%20%D0%A7%D0%A1%20-%20%D0%90%D0%92%D0%A2%D0%9E%20%232
