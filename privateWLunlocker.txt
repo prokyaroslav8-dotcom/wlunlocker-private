@@ -2,7 +2,7 @@
 # profile-update-interval: 1
 # announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp
 # profile-web-page-url: https://github.com/wlunlocker/anti-rkn
-# subsrciption-userinfo: upload=0; download=0; total=0; expire=1807045200
+# subsrciption-userinfo: expire=1807045200
 # support-url: https://t.me/wlunlocker
 # last-update: 23.07.26
 # count: 20
