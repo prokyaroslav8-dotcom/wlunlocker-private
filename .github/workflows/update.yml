@@ -1,8 +1,7 @@
 name: Auto Update Private Subscription
-
 on:
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
