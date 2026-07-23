@@ -102,7 +102,7 @@ async def main():
         today = datetime.now().strftime("%d.%m.%y")
 
         header = [
-            "# profile-title: 💣ПРИВАТНАЯ @wlunlocker",
+            "# profile-title: 💣ПРИВАТ - @wlunlocker",
             f"# last-update: {today}",
             f"# count: {len(renamed_keys)}",
             "",
