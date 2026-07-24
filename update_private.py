@@ -3,9 +3,9 @@ from datetime import datetime
 import re
 import urllib.parse
 from playwright.async_api import async_playwright
+import time
 
-WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
-OUTPUT_FILE = "privateWLunlocker.txt"
+BASE_WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
 
 
 def rename_by_keywords(vless_url: str, index: int) -> str:
@@ -64,7 +64,8 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
 
 
 async def main():
-    print("🚀 Запуск парсера...")
+    WEB_URL = f"{BASE_WEB_URL}&_t={int(time.time())}"
+    print(f"🚀 Запуск парсера...")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
