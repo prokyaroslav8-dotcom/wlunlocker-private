@@ -9,8 +9,8 @@ MY_KEYS_FILE = "my_keys.txt"
 OUTPUT_FILE = "privateWLunlocker.txt"
 MAX_SERVERS = 60
 
-HEADER_WIFI_TITLE = "⬇️Обычный VPN (Wi-Fi)⬇️"
-HEADER_LTE_TITLE = "⬇️Обход глушилок (LTE)⬇️"
+HEADER_WIFI_TITLE = "⬇️ Обычный VPN (Wi-Fi) ⬇️"
+HEADER_LTE_TITLE = "⬇️ Обход глушилок (LTE) ⬇️"
 
 DUMMY_UUID = "00000000-0000-0000-0000-000000000000"
 
