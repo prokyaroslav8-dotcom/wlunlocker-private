@@ -1,13 +1,13 @@
 import asyncio
 from datetime import datetime
 import re
+import time
 import urllib.parse
 from playwright.async_api import async_playwright
-import time
 
--WEB_URL = "https://p.kfwl.lol/https://happ.dska .su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h= 6d0065eef10e3dfa"
+BASE_WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
+OUTPUT_FILE = "privateWLunlocker.txt"
 
--OUTPUT_FILE = "privateWLunlocker.txt"
 
 def rename_by_keywords(vless_url: str, index: int) -> str:
     if "#" in vless_url:
@@ -33,18 +33,19 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         country = "Европа"
     elif flags and flags[0] != "🇷🇺":
         flag = flags[0]
+        # Исправлено: поддержка букв Ё/ё, нескольких слов, дефисов и пробелов
         country_match = re.search(
-            r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-я]+)", decoded_name
+            r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", decoded_name
         )
-        country = (
-            country_match.group(1).capitalize()
-            if country_match
-            else "Все страны"
-        )
+        if country_match:
+            country = country_match.group(1).strip().capitalize()
+        else:
+            country = "Все страны"
     else:
         flag = "🇷🇺"
         country = "Все страны"
 
+    # По твоему правилу: Все страны ВСЕГДА АВТО
     if country == "Все страны":
         is_auto = True
 
@@ -65,7 +66,10 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
 
 
 async def main():
-    print("🚀 Запуск парсера...")
+    # Добавляем анти-кэш параметр к URL, чтобы заставить сайт отдать свежие данные
+    nocache_url = f"{BASE_WEB_URL}&_t={int(time.time())}"
+    print(f"🌐 Запрос свежих данных: {nocache_url}")
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
@@ -73,18 +77,18 @@ async def main():
         )
         page = await context.new_page()
 
-        print(f"🌐 Переходим по ссылке: {WEB_URL}")
-        await page.goto(WEB_URL, wait_until="networkidle")
+        # Отключаем кэш браузера
+        await page.route("**/*", lambda route: route.continue_())
         
-        # Увеличили ожидание до 10 секунд на случай защиты Cloudflare
-        print("⏳ Ждем 10 секунд прогрузки страницы...")
-        await page.wait_for_timeout(10000)
+        await page.goto(nocache_url, wait_until="networkidle")
+        await page.wait_for_timeout(5000)
 
         content = await page.content()
-        print(f"📄 Размер полученного HTML: {len(content)} символов")
 
-        raw_keys = re.findall(r"vless://[^\s<\"']+", content)
-        print(f"🔍 Найдено сырых ссылок: {len(raw_keys)}")
+        # Декодируем HTML-сущности на случай, если ссылки спрятаны в атрибутах
+        decoded_content = urllib.parse.unquote(content)
+
+        raw_keys = re.findall(r"vless://[^\s<\"']+", decoded_content)
 
         clean_keys = []
         for key in raw_keys:
@@ -96,12 +100,11 @@ async def main():
                 clean_keys.append(key)
 
         unique_keys = list(dict.fromkeys(clean_keys))
-        print(f"✅ Уникальных чистых серверов после фильтра: {len(unique_keys)}")
 
         await browser.close()
 
         if not unique_keys:
-            print("❌ Серверы не найдены! Выход.")
+            print("❌ Ошибка: Не удалось найти ни одной VLESS ссылки!")
             exit(1)
 
         renamed_keys = [
@@ -110,11 +113,11 @@ async def main():
         ]
 
         today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-        
-        uploaded_bytes = 83732298752 
-        downloaded_bytes = 0  
-        total_bytes = 0       
-        expire_timestamp = 1807045200 
+
+        uploaded_bytes = 83732298752
+        downloaded_bytes = 0
+        total_bytes = 0
+        expire_timestamp = 1807045200
 
         header = [
             "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
@@ -132,8 +135,8 @@ async def main():
 
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
             f.write(file_content)
-        
-        print(f"💾 Файл успешно сохранен! Записано серверов: {len(renamed_keys)}")
+
+        print(f"✅ Успешно обновлено! Серверов записано: {len(renamed_keys)}")
 
 
 if __name__ == "__main__":
