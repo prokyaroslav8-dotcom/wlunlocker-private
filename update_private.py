@@ -9,8 +9,8 @@ OUTPUT_FILE = "privateWLunlocker.txt"
 MAX_SERVERS = 60
 
 # Заголовки-пустышки для разделения категорий в VPN-клиентах
-HEADER_WIFI_TITLE = "🇪🇺⬇️Обычный VPN (Wi-Fi)⬇️"
-HEADER_LTE_TITLE = "🇷🇺⬇️Обход глушилок (LTE)⬇️"
+HEADER_WIFI_TITLE = "⬇️Обычный VPN (Wi-Fi)⬇️"
+HEADER_LTE_TITLE = "⬇️Обход глушилок (LTE)⬇️"
 
 DUMMY_UUID = "00000000-0000-0000-0000-000000000000"
 
@@ -118,17 +118,19 @@ def parse_key_info(vless_url: str):
 
     if is_bs:
         symbol = "⚡📱"
-    elif country in ["Европа", "Франция"]:
-        symbol = "⚡🤖📺"
-    elif country == "Все страны":
-        symbol = "🏴‍☠️"
+    elif country in ["Европа"]:
+        symbol = "⚡📺
+    elif country in ["Франция"]:
+        symbol = "⚡🤖"
     elif country == "Германия":
         symbol = "⚡🤖"
     elif country == "Нидерланды":
-        symbol = "⚡🎮📺"
+        symbol = "⚡🎮"
     elif country == "США":
         symbol = "📺"
-    elif country in ["Польша", "Норвегия"]:
+    elif country in ["Польша"]:
+        symbol = "🎮"
+    elif country in ["Норвегия, Все страны"]:
         symbol = "🏴‍☠️"
     else:
         symbol = "❓"
@@ -237,7 +239,7 @@ def main():
         "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
         f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
         "# profile-update-interval: 1",
-        "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
+        "# announce: ⚡ - Высокая скорость, 🤖 - Нейросети, 📺 - Быстрый Youtube, 🏴‍☠️ - Торренты, 🎮 - Игры, 📱 - Обход LTE, ❓ - Статус неизвестен",
         "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
         "# support-url: https://t.me/wlunlocker",
         f"# last-update: {today}",
