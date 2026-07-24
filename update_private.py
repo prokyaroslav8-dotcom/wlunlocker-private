@@ -3,9 +3,10 @@ import re
 import urllib.parse
 import urllib.request
 
-RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%20%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
+RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
 MY_KEYS_FILE = "my_keys.txt"
 OUTPUT_FILE = "privateWLunlocker.txt"
+MAX_SERVERS = 60
 
 COUNTRIES_DB = [
     ("🇪🇺", "Европа", ["eu", "eur", "europe", "европа", "🇪🇺"]),
@@ -42,6 +43,7 @@ COUNTRIES_DB = [
     ("🇮🇳", "Индия", ["in", "ind", "india", "индия", "🇮🇳"]),
     ("🇧🇷", "Бразилия", ["br", "bra", "brazil", "бразилия", "🇧🇷"]),
     ("🇦🇺", "Австралия", ["au", "aus", "australia", "австралия", "🇦🇺"]),
+    ("🇨🇳", "Китай", ["cn", "chn", "china", "китай", "🇨🇳"]),
 ]
 
 
@@ -93,20 +95,20 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         else:
             mode = "ЧС"
 
-        is_auto = "авто" in lower_name
-
         clean_base = decoded_name.split("#")[0].strip()
         base_parts = [p.strip() for p in clean_base.split("-")]
         search_target = base_parts[0] if base_parts else clean_base
 
         flag, country = detect_country_and_flag(search_target)
 
-        if country == "Все страны":
-            is_auto = True
+        is_auto = "авто" in lower_name or country == "Все страны"
 
-        flag_prefix = f"{flag}⚡"
+        if country in ["Европа", "Все страны"]:
+            country_part = f"{flag}⚡{country}"
+        else:
+            country_part = f"{flag}{country}"
 
-        parts = [f"{flag_prefix}{country}", mode]
+        parts = [country_part, mode]
         if is_auto:
             parts.append("АВТО")
 
@@ -155,15 +157,19 @@ def main():
     my_clean_keys = clean_keys_list(my_raw_keys)
     auto_clean_keys = clean_keys_list(auto_raw_keys)
 
+    my_keys_to_use = my_clean_keys[:MAX_SERVERS]
+    remaining_slots = MAX_SERVERS - len(my_keys_to_use)
+    auto_keys_to_use = auto_clean_keys[:remaining_slots]
+
     renamed_my = []
     renamed_auto = []
     current_index = 1
 
-    for key in my_clean_keys:
+    for key in my_keys_to_use:
         renamed_my.append(rename_by_keywords(key, current_index))
         current_index += 1
 
-    for key in auto_clean_keys:
+    for key in auto_keys_to_use:
         renamed_auto.append(rename_by_keywords(key, current_index))
         current_index += 1
 
@@ -193,7 +199,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines_out) + "\n")
 
-    print(f"💾 Готово! Всего записей в {OUTPUT_FILE}: {total_count}")
+    print(f"🚀 Готово! Записано серверов: {total_count} из {MAX_SERVERS} макс.")
 
 
 if __name__ == "__main__":
