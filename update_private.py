@@ -33,7 +33,12 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
             r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", decoded_name
         )
         if country_match:
-            country = country_match.group(1).strip().capitalize()
+            raw_country = country_match.group(1).strip()
+            # Исправляем регистр, а аббревиатуры вроде сша делаем заглавными
+            if raw_country.lower() in ["сша", "оаэ", "юк", "германия"]:
+                country = raw_country.upper()
+            else:
+                country = raw_country.capitalize()
         else:
             country = "Все страны"
     else:
@@ -48,6 +53,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     else:
         flag_prefix = f"{flag} "
 
+    # Формируем части по твоему строгому шаблону: СТРАНА - РЕЖИМ - АВТО (если есть)
     parts = [f"{flag_prefix}{country}", mode]
     if is_auto:
         parts.append("АВТО")
@@ -92,8 +98,11 @@ def main():
     ]
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
+    
+    # 2.14 ТБ в байтах
+    used_traffic_bytes = 2352954883440 
     uploaded_bytes = 0
-    downloaded_bytes = 0
+    downloaded_bytes = used_traffic_bytes
     total_bytes = 0
     expire_timestamp = 1807045200
 
