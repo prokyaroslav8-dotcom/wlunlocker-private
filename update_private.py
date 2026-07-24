@@ -227,7 +227,7 @@ def main():
     total_count = len(wifi_keys_info) + len(lte_keys_info)
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-    used_traffic_bytes = 91363817226240
+    used_traffic_bytes = 81363817226240
     uploaded_bytes = 0
     downloaded_bytes = used_traffic_bytes
     total_bytes = 0
