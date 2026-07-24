@@ -2,6 +2,7 @@ from datetime import datetime
 import re
 import urllib.parse
 import urllib.request
+import base64
 
 RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%20%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
 MY_KEYS_FILE = "my_keys.txt"
@@ -247,13 +248,17 @@ def main():
     ]
 
     lines_out = header + final_servers
+    raw_content = "\n".join(lines_out) + "\n"
+
+    encoded_content = base64.b64encode(raw_content.encode("utf-8")).decode("utf-8")
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines_out) + "\n")
+        f.write(encoded_content)
 
     print(
         f"🚀 Готово! Серверов Wi-Fi: {len(wifi_keys_info)}, LTE (БС): {len(lte_keys_info)}. Всего: {total_count}."
     )
+    print(f"🔒 Файл {OUTPUT_FILE} успешно зашифрован в Base64!")
 
 
 if __name__ == "__main__":
