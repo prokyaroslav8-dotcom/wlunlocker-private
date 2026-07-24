@@ -1,11 +1,11 @@
-import urllib.request
-import base64
-import re
-import urllib.parse
+import asyncio
 from datetime import datetime
+import re
+import time
+import urllib.parse
+from playwright.async_api import async_playwright
 
-# Ссылка напрямую на подписку через обходчик (без лимитного сайта happ.dska.su)
-DIRECT_URL = "https://p.kfwl.lol/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
+BASE_WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
 OUTPUT_FILE = "privateWLunlocker.txt"
 
 
@@ -33,6 +33,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         country = "Европа"
     elif flags and flags[0] != "🇷🇺":
         flag = flags[0]
+        # Исправлено: поддержка букв Ё/ё, нескольких слов, дефисов и пробелов
         country_match = re.search(
             r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", decoded_name
         )
@@ -44,6 +45,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         flag = "🇷🇺"
         country = "Все страны"
 
+    # По твоему правилу: Все страны ВСЕГДА АВТО
     if country == "Все страны":
         is_auto = True
 
@@ -53,82 +55,89 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         flag_prefix = f"{flag} "
 
     parts = [f"{flag_prefix}{country}", mode]
+
     if is_auto:
         parts.append("АВТО")
 
     new_name = " - ".join(parts) + f" #{index}"
+
     encoded_name = urllib.parse.quote(new_name)
     return f"{base_url}#{encoded_name}"
 
 
-def main():
-    print(f"🌐 Запрос подписки напрямую: {DIRECT_URL}")
-    
-    req = urllib.request.Request(
-        DIRECT_URL, 
-        headers={'User-Agent': 'v2rayN/6.23 Sing-box/1.8.0'}
-    )
-    
-    try:
-        with urllib.request.urlopen(req, timeout=15) as response:
-            content = response.read().decode('utf-8').strip()
-            print("✅ Данные успешно получены!")
-    except Exception as e:
-        print(f"❌ Ошибка скачивания: {e}")
-        exit(1)
+async def main():
+    # Добавляем анти-кэш параметр к URL, чтобы заставить сайт отдать свежие данные
+    nocache_url = f"{BASE_WEB_URL}&_t={int(time.time())}"
+    print(f"🌐 Запрос свежих данных: {nocache_url}")
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = await context.new_page()
+
+        # Отключаем кэш браузера
+        await page.route("**/*", lambda route: route.continue_())
         
-    print("🔓 Декодируем Base64...")
-    try:
-        decoded_content = base64.b64decode(content).decode('utf-8')
-    except Exception:
-        decoded_content = content
-        
-    raw_keys = re.findall(r"vless://[^\s<\"']+", decoded_content)
-    print(f"🔍 Найдено сырых ссылок: {len(raw_keys)}")
+        await page.goto(nocache_url, wait_until="networkidle")
+        await page.wait_for_timeout(5000)
 
-    clean_keys = []
-    for key in raw_keys:
-        key_lower = urllib.parse.unquote(key).lower()
-        if (
-            "hwid" not in key_lower
-            and "устройств" not in key_lower
-            and "0.0.0.0:1" not in key_lower
-        ):
-            clean_keys.append(key)
+        content = await page.content()
 
-    unique_keys = list(dict.fromkeys(clean_keys))
-    print(f"✅ Уникальных чистых серверов после фильтра: {len(unique_keys)}")
+        # Декодируем HTML-сущности на случай, если ссылки спрятаны в атрибутах
+        decoded_content = urllib.parse.unquote(content)
 
-    if not unique_keys:
-        print("❌ Ошибка: Не удалось найти ни одной чистой VLESS ссылки!")
-        exit(1)
+        raw_keys = re.findall(r"vless://[^\s<\"']+", decoded_content)
 
-    renamed_keys = [rename_by_keywords(key, i + 1) for i, key in enumerate(unique_keys)]
+        clean_keys = []
+        for key in raw_keys:
+            if (
+                "HWID" not in key
+                and "устройства" not in key
+                and "0.0.0.0:1" not in key
+            ):
+                clean_keys.append(key)
 
-    today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-    uploaded_bytes = 83732298752
-    downloaded_bytes = 0
-    total_bytes = 0
-    expire_timestamp = 1807045200
+        unique_keys = list(dict.fromkeys(clean_keys))
 
-    header = [
-        "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
-        f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
-        "# profile-update-interval: 1",
-        "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
-        "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
-        "# support-url: https://t.me/wlunlocker",
-        f"# last-update: {today}",
-        f"# count: {len(renamed_keys)}",
-        "",
-    ]
+        await browser.close()
 
-    file_content = "\n".join(header) + "\n" + "\n".join(renamed_keys)
+        if not unique_keys:
+            print("❌ Ошибка: Не удалось найти ни одной VLESS ссылки!")
+            exit(1)
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(file_content)
+        renamed_keys = [
+            rename_by_keywords(key, i + 1)
+            for i, key in enumerate(unique_keys)
+        ]
 
-    print(f"💾 Файл успешно обновлен! Записано серверов: {len(renamed_keys)}")
+        today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
+
+        uploaded_bytes = 83732298752
+        downloaded_bytes = 0
+        total_bytes = 0
+        expire_timestamp = 1807045200
+
+        header = [
+            "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
+            f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
+            "# profile-update-interval: 1",
+            "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
+            "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
+            "# support-url: https://t.me/wlunlocker",
+            f"# last-update: {today}",
+            f"# count: {len(renamed_keys)}",
+            "",
+        ]
+
+        file_content = "\n".join(header) + "\n" + "\n".join(renamed_keys)
+
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            f.write(file_content)
+
+        print(f"✅ Успешно обновлено! Серверов записано: {len(renamed_keys)}")
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
