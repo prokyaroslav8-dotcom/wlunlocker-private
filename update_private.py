@@ -15,26 +15,34 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     decoded_name = urllib.parse.unquote(raw_tag)
     lower_name = decoded_name.lower()
 
-    is_auto = "авто" in lower_name
-
+    # 1. Определяем режим (БС или ЧС) по всему исходному тексту
     if "белые" in lower_name or "бс" in lower_name:
         mode = "БС"
     else:
         mode = "ЧС"
 
-    flags = re.findall(r"[\U0001F1E6-\U0001F1FF]{2}", decoded_name)
+    # 2. Определяем, авто ли это
+    is_auto = "авто" in lower_name
 
-    if "🇪🇺" in decoded_name or "европа" in lower_name:
+    # 3. Очищаем от старых хвостов (- ЧС, - БС, - АВТО, #1 и т.д.), 
+    # чтобы скрипт при повторном запуске не плодил дубликаты
+    clean_base = decoded_name.split("#")[0].strip()
+    base_parts = [p.strip() for p in clean_base.split("-")]
+    flag_and_country_raw = base_parts[0] if base_parts else clean_base
+
+    flags = re.findall(r"[\U0001F1E6-\U0001F1FF]{2}", flag_and_country_raw)
+
+    if "🇪🇺" in flag_and_country_raw.lower() or "европа" in flag_and_country_raw.lower():
         flag = "🇪🇺"
         country = "Европа"
     elif flags and flags[0] != "🇷🇺":
         flag = flags[0]
         country_match = re.search(
-            r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", decoded_name
+            r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", flag_and_country_raw
         )
         if country_match:
             raw_country = country_match.group(1).strip()
-            # Исправляем регистр, а аббревиатуры вроде сша делаем заглавными
+            # Аббревиатуры всегда капсом
             if raw_country.lower() in ["сша", "оаэ", "юк", "германия"]:
                 country = raw_country.upper()
             else:
@@ -53,7 +61,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     else:
         flag_prefix = f"{flag} "
 
-    # Формируем части по твоему строгому шаблону: СТРАНА - РЕЖИМ - АВТО (если есть)
+    # Формируем аккуратный набор частей
     parts = [f"{flag_prefix}{country}", mode]
     if is_auto:
         parts.append("АВТО")
@@ -73,7 +81,7 @@ def main():
         exit(1)
 
     raw_keys = re.findall(r"vless://[^\s<\"']+", content)
-    print(f"🔍 Найдено сырых ссылок в файле: {len(raw_keys)}")
+    print(f"🔍 Найдено ссылок в файле: {len(raw_keys)}")
 
     clean_keys = []
     for key in raw_keys:
@@ -86,7 +94,7 @@ def main():
             clean_keys.append(key)
 
     unique_keys = list(dict.fromkeys(clean_keys))
-    print(f"✅ Уникальных чистых серверов после фильтра: {len(unique_keys)}")
+    print(f"✅ Уникальных серверов после фильтра: {len(unique_keys)}")
 
     if not unique_keys:
         print("❌ Ошибка: В файле не найдено валидных VLESS ссылок!")
