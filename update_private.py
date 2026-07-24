@@ -71,7 +71,6 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         
-        # Разрешаем контексту работать с буфером обмена
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             permissions=['clipboard-read', 'clipboard-write']
@@ -79,11 +78,9 @@ async def main():
         
         page = await context.new_page()
 
-        # 🔥 ГЛАВНАЯ МАГИЯ: Внедряем перехватчик буфера обмена до загрузки сайта
         await page.add_init_script("""
             window.capturedClipboard = "";
             
-            // Перехват современного API navigator.clipboard
             Object.defineProperty(navigator, 'clipboard', {
                 value: {
                     writeText: async function(text) {
@@ -98,7 +95,6 @@ async def main():
                 configurable: true
             });
 
-            // Перехват старого метода document.execCommand('copy')
             const originalExecCommand = document.execCommand;
             document.execCommand = function(commandId, showUI, value) {
                 if (commandId.toLowerCase() === 'copy') {
@@ -122,30 +118,27 @@ async def main():
         print("⏳ Ждем 10 секунд для прогрузки скриптов сайта...")
         await page.wait_for_timeout(10000)
 
-        print("🖱️ Ищем кнопки копирования на сайте...")
-        # Ищем элементы, в которых есть слова: копир, copy, ключ, vless
+        print("🖱️ Ищем кнопку 'Скопировать все ключи'...")
         buttons = await page.locator("button, a, div[role='button']").all()
         
-        clicked = 0
+        clicked = False
         for btn in buttons:
             try:
                 text = await btn.inner_text()
-                text_lower = text.lower()
-                if any(word in text_lower for word in ["копир", "copy", "ключ", "vless"]):
-                    print(f"🖱️ Найдена кнопка: '{text.strip()}' -> Кликаем!")
+                if "скопировать все ключи" in text.lower():
+                    print(f"🎯 Найдена целевая кнопка: '{text.strip()}' -> Кликаем!")
                     await btn.click(force=True, timeout=2000)
-                    await page.wait_for_timeout(1500)  # Ждем, пока скрипт сайта сгенерирует ключи
-                    clicked += 1
+                    await page.wait_for_timeout(2000)
+                    clicked = True
+                    break  # Выходим из цикла, больше ничего не кликаем
             except:
                 pass
         
-        if clicked == 0:
-            print("⚠️ Явных кнопок не найдено, пробуем достать из кода страницы.")
+        if not clicked:
+            print("⚠️ Кнопка 'Скопировать все ключи' не найдена!")
 
-        # Забираем то, что сайт попытался скопировать
         clipboard_text = await page.evaluate("window.capturedClipboard")
 
-        # Резервный вариант на случай, если ключи просто лежат в скрытом Base64 (стандарт для подписок)
         if "vless://" not in clipboard_text:
             print("⚠️ В буфере пусто. Пробуем раскодировать страницу как Base64 подписку...")
             try:
@@ -157,22 +150,22 @@ async def main():
             except:
                 pass
                 
-            # И совсем на крайний случай - ищем просто в HTML
             content = await page.content()
             clipboard_text += "\n" + urllib.parse.unquote(content)
 
         await browser.close()
 
-        # Ищем все vless:// ссылки в собранном тексте
         raw_keys = re.findall(r"vless://[^\s<\"']+", clipboard_text)
         print(f"🔍 Найдено сырых ссылок: {len(raw_keys)}")
 
         clean_keys = []
         for key in raw_keys:
+            # Улучшенный фильтр с приведением к нижнему регистру для надежности
+            key_lower = urllib.parse.unquote(key).lower()
             if (
-                "HWID" not in key
-                and "устройства" not in key
-                and "0.0.0.0:1" not in key
+                "hwid" not in key_lower
+                and "устройств" not in key_lower
+                and "0.0.0.0:1" not in key_lower
             ):
                 clean_keys.append(key)
 
@@ -180,7 +173,10 @@ async def main():
         print(f"✅ Уникальных чистых серверов после фильтра: {len(unique_keys)}")
 
         if not unique_keys:
-            print("❌ Ошибка: Не удалось найти ни одной VLESS ссылки!")
+            print("❌ Ошибка: Не удалось найти ни одной чистой VLESS ссылки!")
+            print("👇 ВОТ ЧТО САЙТ ОТДАЛ ДО ФИЛЬТРАЦИИ (посмотри, на что он ругается):")
+            for rk in raw_keys:
+                print(" ->", urllib.parse.unquote(rk))
             exit(1)
 
         renamed_keys = [
