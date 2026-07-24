@@ -1,11 +1,7 @@
-import urllib.request
-import base64
+from datetime import datetime
 import re
 import urllib.parse
-from datetime import datetime
 
-# Ссылка напрямую на подписку через прокси (без лимитного сайта happ.dska.su)
-URL = "https://p.kfwl.lol/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
 OUTPUT_FILE = "privateWLunlocker.txt"
 
 
@@ -62,30 +58,16 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
 
 
 def main():
-    print(f"🌐 Запрос подписки напрямую через прокси: {URL}")
-    
-    # Маскируемся под официальный клиент, чтобы сервер отдал чистые ключи
-    req = urllib.request.Request(
-        URL, 
-        headers={'User-Agent': 'v2rayN/6.23 Sing-box/1.8.0'}
-    )
-    
+    print("📂 Читаем файл с сырыми ссылками...")
     try:
-        with urllib.request.urlopen(req, timeout=15) as response:
-            content = response.read().decode('utf-8').strip()
-            print("✅ Данные успешно получены!")
-    except Exception as e:
-        print(f"❌ Ошибка скачивания: {e}")
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            content = f.read()
+    except FileNotFoundError:
+        print(f"❌ Файл {OUTPUT_FILE} не найден!")
         exit(1)
-        
-    print("🔓 Декодируем Base64...")
-    try:
-        decoded_content = base64.b64decode(content).decode('utf-8')
-    except Exception:
-        decoded_content = content
-        
-    raw_keys = re.findall(r"vless://[^\s<\"']+", decoded_content)
-    print(f"🔍 Найдено сырых ссылок: {len(raw_keys)}")
+
+    raw_keys = re.findall(r"vless://[^\s<\"']+", content)
+    print(f"🔍 Найдено сырых ссылок в файле: {len(raw_keys)}")
 
     clean_keys = []
     for key in raw_keys:
@@ -101,10 +83,13 @@ def main():
     print(f"✅ Уникальных чистых серверов после фильтра: {len(unique_keys)}")
 
     if not unique_keys:
-        print("❌ Ошибка: Не удалось найти ни одной чистой VLESS ссылки!")
+        print("❌ Ошибка: В файле не найдено валидных VLESS ссылок!")
         exit(1)
 
-    renamed_keys = [rename_by_keywords(key, i + 1) for i, key in enumerate(unique_keys)]
+    renamed_keys = [
+        rename_by_keywords(key, i + 1)
+        for i, key in enumerate(unique_keys)
+    ]
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
     uploaded_bytes = 83732298752
@@ -129,7 +114,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(file_content)
 
-    print(f"💾 Успешно! Записано серверов: {len(renamed_keys)}")
+    print(f"💾 Успешно обработано! Записано красивых серверов: {len(renamed_keys)}")
 
 
 if __name__ == "__main__":
