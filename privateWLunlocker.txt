@@ -1,10 +1,10 @@
 # profile-title: 💎ПРИВАТНАЯ (VPN + БС)
-# subscription-userinfo: upload=0; download=2352954883440; total=0; expire=2147483647
+# subscription-userinfo: upload=0; download=82177509030000; total=0; expire=1784920013
 # profile-update-interval: 1
 # announce: ⚡ - Высокая скорость, 🤖 - Нейросети, 📺 - Быстрый Youtube, 🏴‍☠️ - Торренты, 🎮 - Игры, 📱 - Обход LTE, ❓ - Статус неизвестен
 # profile-web-page-url: https://github.com/wlunlocker/anti-rkn
 # support-url: https://t.me/wlunlocker
-# last-update: 24.07.26 19:05:04
+# last-update: 24.07.26 19:11:24
 # count: 49
 
 vless://00000000-0000-0000-0000-000000000000@127.0.0.1:1?type=tcp#%E2%AC%87%EF%B8%8F%D0%9E%D0%B1%D1%8B%D1%87%D0%BD%D1%8B%D0%B9%20VPN%20%28Wi-Fi%29%E2%AC%87%EF%B8%8F
