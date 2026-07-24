@@ -4,6 +4,79 @@ import urllib.parse
 
 OUTPUT_FILE = "privateWLunlocker.txt"
 
+# База стран: флаг, правильное название на русском, список ключевых слов/кодов
+COUNTRIES_DB = [
+    ("🇪🇺", "Европа", ["eu", "eur", "europe", "европа", "🇪🇺"]),
+    ("🇺🇸", "США", ["us", "usa", "сша", "united states", "америка", "america", "🇺🇸"]),
+    ("🇩🇪", "Германия", ["de", "ger", "deu", "germany", "германия", "🇩🇪"]),
+    ("🇳🇱", "Нидерланды", ["nl", "nld", "netherlands", "нидерланды", "голландия", "holland", "🇳🇱"]),
+    ("🇫🇷", "Франция", ["fr", "fra", "france", "франция", "🇫🇷"]),
+    ("🇬🇧", "Великобритания", ["gb", "gbr", "uk", "united kingdom", "england", "великобритания", "англия", "юкей", "🇬🇧"]),
+    ("🇹🇷", "Турция", ["tr", "tur", "turkey", "турция", "🇹🇷"]),
+    ("🇫🇮", "Финляндия", ["fi", "fin", "finland", "финляндия", "🇫🇮"]),
+    ("🇵🇱", "Польша", ["pl", "pol", "poland", "польша", "🇵🇱"]),
+    ("🇸🇪", "Швеция", ["se", "swe", "sweden", "швеция", "🇸🇪"]),
+    ("🇰🇿", "Казахстан", ["kz", "kaz", "kazakhstan", "казахстан", "🇰🇿"]),
+    ("🇦🇪", "ОАЭ", ["ae", "uae", "оаэ", "эмираты", "dubai", "дубай", "🇦🇪"]),
+    ("🇯🇵", "Япония", ["jp", "jpn", "japan", "япония", "🇯🇵"]),
+    ("🇰🇷", "Корея", ["kr", "kor", "korea", "корея", "🇰🇷"]),
+    ("🇸🇬", "Сингапур", ["sg", "sgp", "singapore", "сингапур", "🇸🇬"]),
+    ("🇭🇰", "Гонконг", ["hk", "hkg", "hong kong", "гонконг", "🇭🇰"]),
+    ("🇨🇦", "Канада", ["ca", "can", "canada", "канада", "🇨🇦"]),
+    ("🇮🇹", "Италия", ["it", "ita", "italy", "италия", "🇮🇹"]),
+    ("🇪🇸", "Испания", ["es", "esp", "spain", "испания", "🇪🇸"]),
+    ("🇨🇭", "Швейцария", ["ch", "che", "switzerland", "швейцария", "🇨🇭"]),
+    ("🇦🇹", "Австрия", ["at", "aut", "austria", "австрия", "🇦🇹"]),
+    ("🇨🇿", "Чехия", ["cz", "cze", "czechia", "czech", "чехия", "🇨🇿"]),
+    ("🇷🇴", "Румыния", ["ro", "rou", "romania", "румыния", "🇷🇴"]),
+    ("🇧🇬", "Болгария", ["bg", "bgr", "bulgaria", "болгария", "🇧🇬"]),
+    ("🇷🇸", "Сербия", ["rs", "srb", "serbia", "сербия", "🇷🇸"]),
+    ("🇦🇲", "Армения", ["am", "arm", "armenia", "армения", "🇦🇲"]),
+    ("🇬🇪", "Грузия", ["ge", "geo", "georgia", "грузия", "🇬🇪"]),
+    ("🇲🇩", "Молдова", ["md", "mda", "moldova", "молдова", "молдавия", "🇲🇩"]),
+    ("🇪🇪", "Эстония", ["ee", "est", "estonia", "эстония", "🇪🇪"]),
+    ("🇱🇻", "Латвия", ["lv", "lva", "latvia", "латвия", "🇱🇻"]),
+    ("🇱🇹", "Литва", ["lt", "ltu", "lithuania", "литва", "🇱🇹"]),
+    ("🇮🇳", "Индия", ["in", "ind", "india", "индия", "🇮🇳"]),
+    ("🇧🇷", "Бразилия", ["br", "bra", "brazil", "бразилия", "🇧🇷"]),
+    ("🇦🇺", "Австралия", ["au", "aus", "australia", "австралия", "🇦🇺"]),
+]
+
+
+def detect_country_and_flag(text: str):
+    lower_text = text.lower()
+
+    # 1. Сначала ищем совпадения по нашей расширенной базе
+    for flag, country_name, keywords in COUNTRIES_DB:
+        for kw in keywords:
+            # Если ключевое слово длинное или это смайлик — ищем как подстроку
+            if len(kw) > 3 or not kw.isalnum():
+                if kw in lower_text:
+                    return flag, country_name
+            # Если это 2-3 буквенный код — ищем как отдельное слово (чтобы не путать с обычным текстом)
+            else:
+                pattern = r"\b" + re.escape(kw) + r"\b"
+                if re.search(pattern, lower_text):
+                    return flag, country_name
+
+    # 2. Если в тексте есть какой-то другой смайлик флага (которого нет в базе)
+    flags = re.findall(r"[\U0001F1E6-\U0001F1FF]{2}", text)
+    if flags and flags[0] != "🇷🇺":
+        flag = flags[0]
+        country_match = re.search(
+            r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", text
+        )
+        if country_match:
+            raw_country = country_match.group(1).strip()
+            if raw_country.lower() in ["сша", "оаэ", "юк", "германия"]:
+                country = raw_country.upper()
+            else:
+                country = raw_country.capitalize()
+            return flag, country
+
+    # 3. По умолчанию — Все страны
+    return "🇷🇺", "Все страны"
+
 
 def rename_by_keywords(vless_url: str, index: int) -> str:
     if "#" in vless_url:
@@ -15,43 +88,22 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     decoded_name = urllib.parse.unquote(raw_tag)
     lower_name = decoded_name.lower()
 
-    # 1. Определяем режим (БС или ЧС) по всему исходному тексту
+    # Определяем режим (БС / ЧС)
     if "белые" in lower_name or "бс" in lower_name:
         mode = "БС"
     else:
         mode = "ЧС"
 
-    # 2. Определяем, авто ли это
+    # Определяем АВТО
     is_auto = "авто" in lower_name
 
-    # 3. Очищаем от старых хвостов (- ЧС, - БС, - АВТО, #1 и т.д.), 
-    # чтобы скрипт при повторном запуске не плодил дубликаты
+    # Очищаем от старых генераций (- ЧС, - БС, - АВТО, #1 и т.д.)
     clean_base = decoded_name.split("#")[0].strip()
     base_parts = [p.strip() for p in clean_base.split("-")]
-    flag_and_country_raw = base_parts[0] if base_parts else clean_base
+    search_target = base_parts[0] if base_parts else clean_base
 
-    flags = re.findall(r"[\U0001F1E6-\U0001F1FF]{2}", flag_and_country_raw)
-
-    if "🇪🇺" in flag_and_country_raw.lower() or "европа" in flag_and_country_raw.lower():
-        flag = "🇪🇺"
-        country = "Европа"
-    elif flags and flags[0] != "🇷🇺":
-        flag = flags[0]
-        country_match = re.search(
-            r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", flag_and_country_raw
-        )
-        if country_match:
-            raw_country = country_match.group(1).strip()
-            # Аббревиатуры всегда капсом
-            if raw_country.lower() in ["сша", "оаэ", "юк", "германия"]:
-                country = raw_country.upper()
-            else:
-                country = raw_country.capitalize()
-        else:
-            country = "Все страны"
-    else:
-        flag = "🇷🇺"
-        country = "Все страны"
+    # Распознаем страну и флаг
+    flag, country = detect_country_and_flag(search_target)
 
     if country == "Все страны":
         is_auto = True
@@ -61,7 +113,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     else:
         flag_prefix = f"{flag} "
 
-    # Формируем аккуратный набор частей
+    # Формируем название строго по шаблону
     parts = [f"{flag_prefix}{country}", mode]
     if is_auto:
         parts.append("АВТО")
@@ -107,7 +159,7 @@ def main():
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
     
-    # 2.14 ТБ в байтах
+    # 2.14 ТБ трафика
     used_traffic_bytes = 2352954883440 
     uploaded_bytes = 0
     downloaded_bytes = used_traffic_bytes
