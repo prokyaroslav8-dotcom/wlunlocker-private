@@ -3,7 +3,7 @@ import re
 import urllib.parse
 import urllib.request
 
-RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%20%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
+RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
 OUTPUT_FILE = "privateWLunlocker.txt"
 
 COUNTRIES_DB = [
@@ -120,8 +120,33 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     return f"{base_url}#{encoded_name}"
 
 
+def clean_keys_list(raw_keys):
+    clean_keys = []
+    for key in raw_keys:
+        key_lower = urllib.parse.unquote(key).lower()
+        if (
+            "hwid" not in key_lower
+            and "устройств" not in key_lower
+            and "0.0.0.0:1" not in key_lower
+        ):
+            clean_keys.append(key)
+    return list(dict.fromkeys(clean_keys))
+
+
 def main():
-    print("🌐 Скачиваем данные по ссылке RAW...")
+    my_raw_keys = []
+    try:
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            file_text = f.read()
+            if "# Мои" in file_text:
+                my_block = file_text.split("# Мои")[1]
+                if "# Автособранные" in my_block:
+                    my_block = my_block.split("# Автособранные")[0]
+                my_raw_keys = re.findall(r"vless://[^\s<\"']+", my_block)
+    except FileNotFoundError:
+        pass
+
+    print("🌐 Скачиваем новые автособранные данные...")
     req = urllib.request.Request(RAW_URL, headers={"User-Agent": "Mozilla/5.0"})
     try:
         with urllib.request.urlopen(req, timeout=15) as response:
@@ -133,33 +158,26 @@ def main():
     lines = raw_text.splitlines()
     target_lines = lines[6:22]
     content_block = "\n".join(target_lines)
+    auto_raw_keys = re.findall(r"vless://[^\s<\"']+", content_block)
 
-    raw_keys = re.findall(r"vless://[^\s<\"']+", content_block)
-    print(f"🔍 Найдено VLESS ссылок в строках 7-22: {len(raw_keys)}")
+    my_clean_keys = clean_keys_list(my_raw_keys)
+    auto_clean_keys = clean_keys_list(auto_raw_keys)
 
-    clean_keys = []
-    for key in raw_keys:
-        key_lower = urllib.parse.unquote(key).lower()
-        if (
-            "hwid" not in key_lower
-            and "устройств" not in key_lower
-            and "0.0.0.0:1" not in key_lower
-        ):
-            clean_keys.append(key)
+    renamed_my = []
+    renamed_auto = []
+    current_index = 1
 
-    unique_keys = list(dict.fromkeys(clean_keys))
-    print(f"✅ Уникальных чистых серверов: {len(unique_keys)}")
+    for key in my_clean_keys:
+        renamed_my.append(rename_by_keywords(key, current_index))
+        current_index += 1
 
-    if not unique_keys:
-        print("❌ Ошибка: В указанных строках не найдено VLESS ссылок!")
-        exit(1)
+    for key in auto_clean_keys:
+        renamed_auto.append(rename_by_keywords(key, current_index))
+        current_index += 1
 
-    renamed_keys = [
-        rename_by_keywords(key, i + 1) for i, key in enumerate(unique_keys)
-    ]
+    total_count = len(renamed_my) + len(renamed_auto)
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-
     used_traffic_bytes = 2352954883440
     uploaded_bytes = 0
     downloaded_bytes = used_traffic_bytes
@@ -174,16 +192,16 @@ def main():
         "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
         "# support-url: https://t.me/wlunlocker",
         f"# last-update: {today}",
-        f"# count: {len(renamed_keys)}",
+        f"# count: {total_count}",
         "",
     ]
 
-    file_content = "\n".join(header) + "\n" + "\n".join(renamed_keys)
+    lines_out = header + ["# Мои"] + renamed_my + ["", "# Автособранные"] + renamed_auto
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(file_content)
+        f.write("\n".join(lines_out) + "\n")
 
-    print(f"💾 Успешно обработано! Записано серверов: {len(renamed_keys)}")
+    print(f"💾 Успешно обработано! Всего: {total_count} (Моих: {len(renamed_my)}, Авто: {len(renamed_auto)})")
 
 
 if __name__ == "__main__":
