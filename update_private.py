@@ -3,6 +3,7 @@ from datetime import datetime
 import re
 import time
 import urllib.parse
+import base64
 from playwright.async_api import async_playwright
 
 BASE_WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
@@ -33,7 +34,6 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         country = "Европа"
     elif flags and flags[0] != "🇷🇺":
         flag = flags[0]
-        # Исправлено: поддержка букв Ё/ё, нескольких слов, дефисов и пробелов
         country_match = re.search(
             r"[\U0001F1E6-\U0001F1FF]{2}\s*([A-Za-zА-Яа-яЁё\s\-]+)", decoded_name
         )
@@ -45,7 +45,6 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         flag = "🇷🇺"
         country = "Все страны"
 
-    # По твоему правилу: Все страны ВСЕГДА АВТО
     if country == "Все страны":
         is_auto = True
 
@@ -66,29 +65,107 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
 
 
 async def main():
-    # Добавляем анти-кэш параметр к URL, чтобы заставить сайт отдать свежие данные
     nocache_url = f"{BASE_WEB_URL}&_t={int(time.time())}"
     print(f"🌐 Запрос свежих данных: {nocache_url}")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
+        
+        # Разрешаем контексту работать с буфером обмена
         context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            permissions=['clipboard-read', 'clipboard-write']
         )
+        
         page = await context.new_page()
 
-        # Отключаем кэш браузера
+        # 🔥 ГЛАВНАЯ МАГИЯ: Внедряем перехватчик буфера обмена до загрузки сайта
+        await page.add_init_script("""
+            window.capturedClipboard = "";
+            
+            // Перехват современного API navigator.clipboard
+            Object.defineProperty(navigator, 'clipboard', {
+                value: {
+                    writeText: async function(text) {
+                        window.capturedClipboard += "\\n" + text;
+                        return Promise.resolve();
+                    },
+                    readText: async function() {
+                        return window.capturedClipboard;
+                    }
+                },
+                writable: true,
+                configurable: true
+            });
+
+            // Перехват старого метода document.execCommand('copy')
+            const originalExecCommand = document.execCommand;
+            document.execCommand = function(commandId, showUI, value) {
+                if (commandId.toLowerCase() === 'copy') {
+                    const selectedText = window.getSelection().toString();
+                    if (selectedText) {
+                        window.capturedClipboard += "\\n" + selectedText;
+                    } else {
+                        const activeElement = document.activeElement;
+                        if (activeElement && (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT')) {
+                            window.capturedClipboard += "\\n" + activeElement.value;
+                        }
+                    }
+                }
+                return originalExecCommand.apply(document, arguments);
+            };
+        """)
+
         await page.route("**/*", lambda route: route.continue_())
-        
         await page.goto(nocache_url, wait_until="networkidle")
-        await page.wait_for_timeout(5000)
+        
+        print("⏳ Ждем 10 секунд для прогрузки скриптов сайта...")
+        await page.wait_for_timeout(10000)
 
-        content = await page.content()
+        print("🖱️ Ищем кнопки копирования на сайте...")
+        # Ищем элементы, в которых есть слова: копир, copy, ключ, vless
+        buttons = await page.locator("button, a, div[role='button']").all()
+        
+        clicked = 0
+        for btn in buttons:
+            try:
+                text = await btn.inner_text()
+                text_lower = text.lower()
+                if any(word in text_lower for word in ["копир", "copy", "ключ", "vless"]):
+                    print(f"🖱️ Найдена кнопка: '{text.strip()}' -> Кликаем!")
+                    await btn.click(force=True, timeout=2000)
+                    await page.wait_for_timeout(1500)  # Ждем, пока скрипт сайта сгенерирует ключи
+                    clicked += 1
+            except:
+                pass
+        
+        if clicked == 0:
+            print("⚠️ Явных кнопок не найдено, пробуем достать из кода страницы.")
 
-        # Декодируем HTML-сущности на случай, если ссылки спрятаны в атрибутах
-        decoded_content = urllib.parse.unquote(content)
+        # Забираем то, что сайт попытался скопировать
+        clipboard_text = await page.evaluate("window.capturedClipboard")
 
-        raw_keys = re.findall(r"vless://[^\s<\"']+", decoded_content)
+        # Резервный вариант на случай, если ключи просто лежат в скрытом Base64 (стандарт для подписок)
+        if "vless://" not in clipboard_text:
+            print("⚠️ В буфере пусто. Пробуем раскодировать страницу как Base64 подписку...")
+            try:
+                inner_text = await page.evaluate("document.body.innerText")
+                decoded_b64 = base64.b64decode(inner_text.strip()).decode('utf-8')
+                if "vless://" in decoded_b64:
+                    print("✅ Найдены ключи в формате Base64!")
+                    clipboard_text += "\n" + decoded_b64
+            except:
+                pass
+                
+            # И совсем на крайний случай - ищем просто в HTML
+            content = await page.content()
+            clipboard_text += "\n" + urllib.parse.unquote(content)
+
+        await browser.close()
+
+        # Ищем все vless:// ссылки в собранном тексте
+        raw_keys = re.findall(r"vless://[^\s<\"']+", clipboard_text)
+        print(f"🔍 Найдено сырых ссылок: {len(raw_keys)}")
 
         clean_keys = []
         for key in raw_keys:
@@ -100,8 +177,7 @@ async def main():
                 clean_keys.append(key)
 
         unique_keys = list(dict.fromkeys(clean_keys))
-
-        await browser.close()
+        print(f"✅ Уникальных чистых серверов после фильтра: {len(unique_keys)}")
 
         if not unique_keys:
             print("❌ Ошибка: Не удалось найти ни одной VLESS ссылки!")
