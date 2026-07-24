@@ -3,10 +3,16 @@ import re
 import urllib.parse
 import urllib.request
 
-RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%20%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
+RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
 MY_KEYS_FILE = "my_keys.txt"
 OUTPUT_FILE = "privateWLunlocker.txt"
 MAX_SERVERS = 60
+
+# Заголовки-пустышки для разделения категорий в VPN-клиентах
+HEADER_WIFI_TITLE = "🇪🇺⬇️Обычный VPN (Wi-Fi)⬇️"
+HEADER_LTE_TITLE = "🇷🇺⬇️Обход глушилок (LTE)⬇️"
+
+DUMMY_UUID = "00000000-0000-0000-0000-000000000000"
 
 COUNTRIES_DB = [
     ("🇪🇺", "Европа", ["eu", "eur", "europe", "европа", "🇪🇺"]),
@@ -48,6 +54,12 @@ COUNTRIES_DB = [
 ]
 
 
+def create_header_node(title: str) -> str:
+    """Создает пустой нерабочий сервер для использования в качестве визуальной плашки"""
+    encoded_title = urllib.parse.quote(title)
+    return f"vless://{DUMMY_UUID}@127.0.0.1:1?type=tcp#{encoded_title}"
+
+
 def detect_country_and_flag(text: str):
     lower_text = text.lower()
 
@@ -78,7 +90,8 @@ def detect_country_and_flag(text: str):
     return "🇷🇺", "Все страны"
 
 
-def rename_by_keywords(vless_url: str, index: int) -> str:
+def parse_key_info(vless_url: str):
+    """Разбирает ключ и возвращает метаданные для формирования имени"""
     if "#" in vless_url:
         base_url, raw_tag = vless_url.split("#", 1)
     else:
@@ -88,15 +101,12 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     decoded_name = urllib.parse.unquote(raw_tag)
     lower_name = decoded_name.lower()
 
-    if "белые" in lower_name or "бс" in lower_name:
-        mode = "БС"
-    else:
-        mode = "ЧС"
+    is_bs = "белые" in lower_name or "бс" in lower_name
 
     if "быстрый" in lower_name or "антизаглушки" in lower_name:
         flag = "🇪🇺"
         country = "Европа"
-        mode = "ЧС"
+        is_bs = False
         is_auto = True
     else:
         clean_base = decoded_name.split("#")[0].strip()
@@ -106,7 +116,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         flag, country = detect_country_and_flag(search_target)
         is_auto = "авто" in lower_name or country == "Все страны"
 
-    if mode == "БС":
+    if is_bs:
         symbol = "⚡📱"
     elif country in ["Европа", "Франция"]:
         symbol = "⚡🤖📺"
@@ -123,14 +133,24 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     else:
         symbol = "❓"
 
-    parts = [f"{flag}{symbol} {country}", mode]
-    if is_auto:
+    return {
+        "base_url": base_url,
+        "is_bs": is_bs,
+        "flag": flag,
+        "symbol": symbol,
+        "country": country,
+        "is_auto": is_auto,
+    }
+
+
+def build_vless_url(info: dict, index: int) -> str:
+    parts = [f"{info['flag']}{info['symbol']} {info['country']}"]
+    if info["is_auto"]:
         parts.append("АВТО")
 
     new_name = " - ".join(parts) + f" #{index}"
-
     encoded_name = urllib.parse.quote(new_name)
-    return f"{base_url}#{encoded_name}"
+    return f"{info['base_url']}#{encoded_name}"
 
 
 def clean_keys_list(raw_keys):
@@ -141,6 +161,7 @@ def clean_keys_list(raw_keys):
             "hwid" not in key_lower
             and "устройств" not in key_lower
             and "0.0.0.0:1" not in key_lower
+            and DUMMY_UUID not in key_lower
         ):
             clean_keys.append(key)
     return list(dict.fromkeys(clean_keys))
@@ -176,19 +197,34 @@ def main():
     remaining_slots = MAX_SERVERS - len(my_keys_to_use)
     auto_keys_to_use = auto_clean_keys[:remaining_slots]
 
-    renamed_my = []
-    renamed_auto = []
+    all_keys = my_keys_to_use + auto_keys_to_use
+
+    wifi_keys_info = []
+    lte_keys_info = []
+
+    for key in all_keys:
+        info = parse_key_info(key)
+        if info["is_bs"]:
+            lte_keys_info.append(info)
+        else:
+            wifi_keys_info.append(info)
+
+    final_servers = []
     current_index = 1
 
-    for key in my_keys_to_use:
-        renamed_my.append(rename_by_keywords(key, current_index))
-        current_index += 1
+    if wifi_keys_info:
+        final_servers.append(create_header_node(HEADER_WIFI_TITLE))
+        for info in wifi_keys_info:
+            final_servers.append(build_vless_url(info, current_index))
+            current_index += 1
 
-    for key in auto_keys_to_use:
-        renamed_auto.append(rename_by_keywords(key, current_index))
-        current_index += 1
+    if lte_keys_info:
+        final_servers.append(create_header_node(HEADER_LTE_TITLE))
+        for info in lte_keys_info:
+            final_servers.append(build_vless_url(info, current_index))
+            current_index += 1
 
-    total_count = len(renamed_my) + len(renamed_auto)
+    total_count = len(wifi_keys_info) + len(lte_keys_info)
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
     used_traffic_bytes = 2352954883440
@@ -201,7 +237,7 @@ def main():
         "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
         f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
         "# profile-update-interval: 1",
-        "# announce: ⚡ - Скорость, 🤖 - ИИ, 📺 - Youtube 4K, 🏴‍☠️ - Торренты, 🎮 - Игры, 📱 - Обход LTE",
+        "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
         "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
         "# support-url: https://t.me/wlunlocker",
         f"# last-update: {today}",
@@ -209,12 +245,14 @@ def main():
         "",
     ]
 
-    lines_out = header + ["# Мои"] + renamed_my + ["", "# Автособранные"] + renamed_auto
+    lines_out = header + final_servers
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines_out) + "\n")
 
-    print(f"🚀 Готово! Записано серверов: {total_count} из {MAX_SERVERS} макс.")
+    print(
+        f"🚀 Готово! Серверов Wi-Fi: {len(wifi_keys_info)}, LTE (БС): {len(lte_keys_info)}. Всего: {total_count}."
+    )
 
 
 if __name__ == "__main__":
