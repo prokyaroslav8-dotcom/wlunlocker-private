@@ -160,11 +160,11 @@ def main():
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
     
     # 2.14 ТБ трафика
-    used_traffic_bytes = 2352954883440 
+    used_traffic_bytes = 0
     uploaded_bytes = 0
     downloaded_bytes = used_traffic_bytes
     total_bytes = 0
-    expire_timestamp = 1807045200
+    expire_timestamp = 2147483647
 
     header = [
         "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
