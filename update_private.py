@@ -1,10 +1,11 @@
 from datetime import datetime
 import re
 import urllib.parse
+import urllib.request
 
+RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
 OUTPUT_FILE = "privateWLunlocker.txt"
 
-# База стран: флаг, правильное название на русском, список ключевых слов/кодов
 COUNTRIES_DB = [
     ("🇪🇺", "Европа", ["eu", "eur", "europe", "европа", "🇪🇺"]),
     ("🇺🇸", "США", ["us", "usa", "сша", "united states", "америка", "america", "🇺🇸"]),
@@ -46,20 +47,16 @@ COUNTRIES_DB = [
 def detect_country_and_flag(text: str):
     lower_text = text.lower()
 
-    # 1. Сначала ищем совпадения по нашей расширенной базе
     for flag, country_name, keywords in COUNTRIES_DB:
         for kw in keywords:
-            # Если ключевое слово длинное или это смайлик — ищем как подстроку
             if len(kw) > 3 or not kw.isalnum():
                 if kw in lower_text:
                     return flag, country_name
-            # Если это 2-3 буквенный код — ищем как отдельное слово (чтобы не путать с обычным текстом)
             else:
                 pattern = r"\b" + re.escape(kw) + r"\b"
                 if re.search(pattern, lower_text):
                     return flag, country_name
 
-    # 2. Если в тексте есть какой-то другой смайлик флага (которого нет в базе)
     flags = re.findall(r"[\U0001F1E6-\U0001F1FF]{2}", text)
     if flags and flags[0] != "🇷🇺":
         flag = flags[0]
@@ -74,7 +71,6 @@ def detect_country_and_flag(text: str):
                 country = raw_country.capitalize()
             return flag, country
 
-    # 3. По умолчанию — Все страны
     return "🇷🇺", "Все страны"
 
 
@@ -88,52 +84,58 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     decoded_name = urllib.parse.unquote(raw_tag)
     lower_name = decoded_name.lower()
 
-    # Определяем режим (БС / ЧС)
-    if "белые" in lower_name or "бс" in lower_name:
-        mode = "БС"
+    if "быстрый" in lower_name:
+        new_name = f"🇪🇺⚡Европа - ЧС - АВТО #{index}"
+    elif "антизаглушки" in lower_name:
+        new_name = f"🇪🇺⚡Европа - БС - АВТО #{index}"
     else:
-        mode = "ЧС"
+        if "белые" in lower_name or "бс" in lower_name:
+            mode = "БС"
+        else:
+            mode = "ЧС"
 
-    # Определяем АВТО
-    is_auto = "авто" in lower_name
+        is_auto = "авто" in lower_name
 
-    # Очищаем от старых генераций (- ЧС, - БС, - АВТО, #1 и т.д.)
-    clean_base = decoded_name.split("#")[0].strip()
-    base_parts = [p.strip() for p in clean_base.split("-")]
-    search_target = base_parts[0] if base_parts else clean_base
+        clean_base = decoded_name.split("#")[0].strip()
+        base_parts = [p.strip() for p in clean_base.split("-")]
+        search_target = base_parts[0] if base_parts else clean_base
 
-    # Распознаем страну и флаг
-    flag, country = detect_country_and_flag(search_target)
+        flag, country = detect_country_and_flag(search_target)
 
-    if country == "Все страны":
-        is_auto = True
+        if country == "Все страны":
+            is_auto = True
 
-    if is_auto:
-        flag_prefix = f"{flag}⚡ "
-    else:
-        flag_prefix = f"{flag} "
+        if is_auto:
+            flag_prefix = f"{flag}⚡ "
+        else:
+            flag_prefix = f"{flag} "
 
-    # Формируем название строго по шаблону
-    parts = [f"{flag_prefix}{country}", mode]
-    if is_auto:
-        parts.append("АВТО")
+        parts = [f"{flag_prefix}{country}", mode]
+        if is_auto:
+            parts.append("АВТО")
 
-    new_name = " - ".join(parts) + f" #{index}"
+        new_name = " - ".join(parts) + f" #{index}"
+
     encoded_name = urllib.parse.quote(new_name)
     return f"{base_url}#{encoded_name}"
 
 
 def main():
-    print("📂 Читаем файл с сырыми ссылками...")
+    print("🌐 Скачиваем данные по ссылке RAW...")
+    req = urllib.request.Request(RAW_URL, headers={"User-Agent": "Mozilla/5.0"})
     try:
-        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-            content = f.read()
-    except FileNotFoundError:
-        print(f"❌ Файл {OUTPUT_FILE} не найден!")
+        with urllib.request.urlopen(req, timeout=15) as response:
+            raw_text = response.read().decode("utf-8")
+    except Exception as e:
+        print(f"❌ Ошибка скачивания: {e}")
         exit(1)
 
-    raw_keys = re.findall(r"vless://[^\s<\"']+", content)
-    print(f"🔍 Найдено ссылок в файле: {len(raw_keys)}")
+    lines = raw_text.splitlines()
+    target_lines = lines[6:22]
+    content_block = "\n".join(target_lines)
+
+    raw_keys = re.findall(r"vless://[^\s<\"']+", content_block)
+    print(f"🔍 Найдено VLESS ссылок в строках 7-22: {len(raw_keys)}")
 
     clean_keys = []
     for key in raw_keys:
@@ -146,21 +148,19 @@ def main():
             clean_keys.append(key)
 
     unique_keys = list(dict.fromkeys(clean_keys))
-    print(f"✅ Уникальных серверов после фильтра: {len(unique_keys)}")
+    print(f"✅ Уникальных чистых серверов: {len(unique_keys)}")
 
     if not unique_keys:
-        print("❌ Ошибка: В файле не найдено валидных VLESS ссылок!")
+        print("❌ Ошибка: В указанных строках не найдено VLESS ссылок!")
         exit(1)
 
     renamed_keys = [
-        rename_by_keywords(key, i + 1)
-        for i, key in enumerate(unique_keys)
+        rename_by_keywords(key, i + 1) for i, key in enumerate(unique_keys)
     ]
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-    
-    # 2.14 ТБ трафика
-    used_traffic_bytes = 0
+
+    used_traffic_bytes = 2352954883440
     uploaded_bytes = 0
     downloaded_bytes = used_traffic_bytes
     total_bytes = 0
@@ -183,7 +183,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(file_content)
 
-    print(f"💾 Успешно обработано! Записано красивых серверов: {len(renamed_keys)}")
+    print(f"💾 Успешно обработано! Записано серверов: {len(renamed_keys)}")
 
 
 if __name__ == "__main__":
