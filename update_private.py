@@ -92,7 +92,7 @@ def main():
     ]
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-    uploaded_bytes = 83732298752
+    uploaded_bytes = 0
     downloaded_bytes = 0
     total_bytes = 0
     expire_timestamp = 1807045200
