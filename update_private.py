@@ -8,7 +8,6 @@ MY_KEYS_FILE = "my_keys.txt"
 OUTPUT_FILE = "privateWLunlocker.txt"
 MAX_SERVERS = 60
 
-# Заголовки-пустышки для разделения категорий в VPN-клиентах
 HEADER_WIFI_TITLE = "⬇️Обычный VPN (Wi-Fi)⬇️"
 HEADER_LTE_TITLE = "⬇️Обход глушилок (LTE)⬇️"
 
@@ -130,7 +129,7 @@ def parse_key_info(vless_url: str):
         symbol = "📺"
     elif country in ["Польша"]:
         symbol = "🎮"
-    elif country in ["Норвегия, Все страны"]:
+    elif country in ["Норвегия", "Все страны"]:
         symbol = "🏴‍☠️"
     else:
         symbol = "❓"
