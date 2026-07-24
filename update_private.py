@@ -85,10 +85,8 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     decoded_name = urllib.parse.unquote(raw_tag)
     lower_name = decoded_name.lower()
 
-    if "быстрый" in lower_name:
+    if "быстрый" in lower_name or "антизаглушки" in lower_name:
         new_name = f"🇪🇺⚡Европа - ЧС - АВТО #{index}"
-    elif "антизаглушки" in lower_name:
-        new_name = f"🇪🇺⚡Европа - БС - АВТО #{index}"
     else:
         if "белые" in lower_name or "бс" in lower_name:
             mode = "БС"
@@ -106,10 +104,7 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
         if country == "Все страны":
             is_auto = True
 
-        if is_auto:
-            flag_prefix = f"{flag}⚡ "
-        else:
-            flag_prefix = f"{flag} "
+        flag_prefix = f"{flag}⚡"
 
         parts = [f"{flag_prefix}{country}", mode]
         if is_auto:
@@ -198,7 +193,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines_out) + "\n")
 
-    print(f"💾 Готово! Файл {MY_KEYS_FILE} не тронут. Записано в {OUTPUT_FILE}: {total_count} шт.")
+    print(f"💾 Готово! Всего записей в {OUTPUT_FILE}: {total_count}")
 
 
 if __name__ == "__main__":
