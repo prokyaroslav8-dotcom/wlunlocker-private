@@ -1,10 +1,11 @@
 import asyncio
 from datetime import datetime
 import re
+import time
 import urllib.parse
 from playwright.async_api import async_playwright
 
-WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
+BASE_WEB_URL = "https://p.kfwl.lol/https://happ.dska.su/https://sub.67vpn.monster/V4XtpRqVJ8umZbvX?h=6d0065eef10e3dfa"
 OUTPUT_FILE = "privateWLunlocker.txt"
 
 
@@ -64,6 +65,9 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
 
 
 async def main():
+    # Динамический хвост времени ломает кэш прокси-сервера
+    WEB_URL = f"{BASE_WEB_URL}&_t={int(time.time())}"
+    
     print("🚀 Запуск парсера...")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -75,7 +79,6 @@ async def main():
         print(f"🌐 Переходим по ссылке: {WEB_URL}")
         await page.goto(WEB_URL, wait_until="networkidle")
         
-        # Увеличили ожидание до 10 секунд на случай защиты Cloudflare
         print("⏳ Ждем 10 секунд прогрузки страницы...")
         await page.wait_for_timeout(10000)
 
