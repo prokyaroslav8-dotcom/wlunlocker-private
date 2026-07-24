@@ -116,7 +116,7 @@ async def main():
         expire_timestamp = 1807045200 
 
         header = [
-            "# profile-title: 💣ПРИВАТ - @wlunlocker",
+            "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
             f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
             "# profile-update-interval: 1",
             "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
