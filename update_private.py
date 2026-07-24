@@ -4,6 +4,7 @@ import urllib.parse
 import urllib.request
 
 RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%20%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
+MY_KEYS_FILE = "my_keys.txt"
 OUTPUT_FILE = "privateWLunlocker.txt"
 
 COUNTRIES_DB = [
@@ -136,17 +137,13 @@ def clean_keys_list(raw_keys):
 def main():
     my_raw_keys = []
     try:
-        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-            file_text = f.read()
-            if "# Мои" in file_text:
-                my_block = file_text.split("# Мои")[1]
-                if "# Автособранные" in my_block:
-                    my_block = my_block.split("# Автособранные")[0]
-                my_raw_keys = re.findall(r"vless://[^\s<\"']+", my_block)
+        with open(MY_KEYS_FILE, "r", encoding="utf-8") as f:
+            my_raw_keys = re.findall(r"vless://[^\s<\"']+", f.read())
     except FileNotFoundError:
-        pass
+        with open(MY_KEYS_FILE, "w", encoding="utf-8") as f:
+            f.write("# Вставляй сюда свои VLESS ссылки\n")
 
-    print("🌐 Скачиваем новые автособранные данные...")
+    print("🌐 Скачиваем автособранные данные...")
     req = urllib.request.Request(RAW_URL, headers={"User-Agent": "Mozilla/5.0"})
     try:
         with urllib.request.urlopen(req, timeout=15) as response:
@@ -201,7 +198,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines_out) + "\n")
 
-    print(f"💾 Успешно обработано! Всего: {total_count} (Моих: {len(renamed_my)}, Авто: {len(renamed_auto)})")
+    print(f"💾 Готово! Файл {MY_KEYS_FILE} не тронут. Записано в {OUTPUT_FILE}: {total_count} шт.")
 
 
 if __name__ == "__main__":
