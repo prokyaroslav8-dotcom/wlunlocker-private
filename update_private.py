@@ -228,11 +228,11 @@ def main():
     total_count = len(wifi_keys_info) + len(lte_keys_info)
 
     today = datetime.now().strftime("%d.%m.%y %H:%M:%S")
-    used_traffic_bytes = 2352954883440
+    used_traffic_bytes = 82177509030000
     uploaded_bytes = 0
     downloaded_bytes = used_traffic_bytes
     total_bytes = 0
-    expire_timestamp = 2147483647
+    expire_timestamp = 1784920013
 
     header = [
         "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
