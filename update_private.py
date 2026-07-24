@@ -3,7 +3,7 @@ import re
 import urllib.parse
 import urllib.request
 
-RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%20%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
+RAW_URL = "https://raw.githubusercontent.com/SoloRepozSF/Key-for-vpn/refs/heads/main/%D0%95%D1%81%D0%BB%D0%B8%20%D0%B1%20%D1%8F%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%2010%20%D1%82%D0%BE%D1%82%D0%B2%D0%BE%D0%B9%20%D0%BF%D0%B0%D1%85%D0%B0%D0%BD%20%D0%BF%D0%BE%D1%88%D0%B5%D0%BB%20%D0%B1%D1%8B%20%D0%B2%205"
 MY_KEYS_FILE = "my_keys.txt"
 OUTPUT_FILE = "privateWLunlocker.txt"
 MAX_SERVERS = 60
@@ -18,6 +18,7 @@ COUNTRIES_DB = [
     ("🇹🇷", "Турция", ["tr", "tur", "turkey", "турция", "🇹🇷"]),
     ("🇫🇮", "Финляндия", ["fi", "fin", "finland", "финляндия", "🇫🇮"]),
     ("🇵🇱", "Польша", ["pl", "pol", "poland", "польша", "🇵🇱"]),
+    ("🇳🇴", "Норвегия", ["no", "nor", "norway", "норвегия", "🇳🇴"]),
     ("🇸🇪", "Швеция", ["se", "swe", "sweden", "швеция", "🇸🇪"]),
     ("🇰🇿", "Казахстан", ["kz", "kaz", "kazakhstan", "казахстан", "🇰🇿"]),
     ("🇦🇪", "ОАЭ", ["ae", "uae", "оаэ", "эмираты", "dubai", "дубай", "🇦🇪"]),
@@ -87,32 +88,46 @@ def rename_by_keywords(vless_url: str, index: int) -> str:
     decoded_name = urllib.parse.unquote(raw_tag)
     lower_name = decoded_name.lower()
 
-    if "быстрый" in lower_name or "антизаглушки" in lower_name:
-        new_name = f"🇪🇺⚡Европа - ЧС - АВТО #{index}"
+    if "белые" in lower_name or "бс" in lower_name:
+        mode = "БС"
     else:
-        if "белые" in lower_name or "бс" in lower_name:
-            mode = "БС"
-        else:
-            mode = "ЧС"
+        mode = "ЧС"
 
+    if "быстрый" in lower_name or "антизаглушки" in lower_name:
+        flag = "🇪🇺"
+        country = "Европа"
+        mode = "ЧС"
+        is_auto = True
+    else:
         clean_base = decoded_name.split("#")[0].strip()
         base_parts = [p.strip() for p in clean_base.split("-")]
         search_target = base_parts[0] if base_parts else clean_base
 
         flag, country = detect_country_and_flag(search_target)
-
         is_auto = "авто" in lower_name or country == "Все страны"
 
-        if country in ["Европа", "Все страны"]:
-            country_part = f"{flag}⚡{country}"
-        else:
-            country_part = f"{flag}{country}"
+    if mode == "БС":
+        symbol = "⚡📱"
+    elif country in ["Европа", "Франция"]:
+        symbol = "⚡🤖📺"
+    elif country == "Все страны":
+        symbol = "🏴‍☠️"
+    elif country == "Германия":
+        symbol = "⚡🤖"
+    elif country == "Нидерланды":
+        symbol = "⚡🎮📺"
+    elif country == "США":
+        symbol = "📺"
+    elif country in ["Польша", "Норвегия"]:
+        symbol = "🏴‍☠️"
+    else:
+        symbol = "❓"
 
-        parts = [country_part, mode]
-        if is_auto:
-            parts.append("АВТО")
+    parts = [f"{flag}{symbol} {country}", mode]
+    if is_auto:
+        parts.append("АВТО")
 
-        new_name = " - ".join(parts) + f" #{index}"
+    new_name = " - ".join(parts) + f" #{index}"
 
     encoded_name = urllib.parse.quote(new_name)
     return f"{base_url}#{encoded_name}"
@@ -186,7 +201,7 @@ def main():
         "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
         f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
         "# profile-update-interval: 1",
-        "# announce: Приватные, 100% рабочие ключи. Больше подписок и прокси у нас в Telegram-канале или на сайте. Поддержка: @iduchamp",
+        "# announce: ⚡ - Скорость, 🤖 - ИИ, 📺 - Youtube 4K, 🏴‍☠️ - Торренты, 🎮 - Игры, 📱 - Обход LTE",
         "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
         "# support-url: https://t.me/wlunlocker",
         f"# last-update: {today}",
