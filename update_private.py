@@ -4,7 +4,7 @@ import urllib.parse
 import urllib.request
 import base64
 
-RAW_URL = "https://raw.githubusercontent.com/s0ulcoil/rkvpn/refs/heads/main/randomkeys"
+RAW_URL = "https://gist.githubusercontent.com/arhivedxx7/ca5d7b28ce9e22bc0b4a4bcae37ead54/raw/1032f3c2d7f0cf17bf128cc228a9df45cf34cc26/gistfile1.txt"
 MY_KEYS_FILE = "my_keys.txt"
 OUTPUT_FILE = "privateWLunlocker.txt"
 MAX_SERVERS = 70
