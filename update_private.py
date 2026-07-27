@@ -122,7 +122,7 @@ def parse_key_info(vless_url: str):
         symbol = "⚡📺"
     elif country in ["Франция", "Германия", "Швеция",]:
         symbol = "⚡🤖"
-    elif country in ["Нидерланды", "Финляндия", "Канада", "Эстония"]:
+    elif country in ["Нидерланды", "Финляндия", "Канада", "Эстония", "Казахстан", "Турция"]:
         symbol = "⚡"
     elif country == "США":
         symbol = "📺"
@@ -130,6 +130,8 @@ def parse_key_info(vless_url: str):
         symbol = "🎮"
     elif country in ["Норвегия", "Румыния", "Великобритания", "Все страны"]:
         symbol = "🏴‍☠️"
+    elif country in ["Латвия", "Индия", "Австрия", "Япония", "Бразилия"]
+        symbol = 🔧
     else:
         symbol = "❓"
 
@@ -237,7 +239,7 @@ def main():
         "# profile-title: 💎ПРИВАТНАЯ (VPN + БС)",
         f"# subscription-userinfo: upload={uploaded_bytes}; download={downloaded_bytes}; total={total_bytes}; expire={expire_timestamp}",
         "# profile-update-interval: 1",
-        "# announce: ⚡ - Высокая скорость, 🤖 - Нейросети, 📺 - Быстрый Youtube, 🏴‍☠️ - Торренты, 🎮 - Игры, 📱 - Обход LTE, ❓ - Статус неизвестен",
+        "# announce: ⚡ - Высокая скорость; 🤖 - Нейросети; 📺 - Быстрый Youtube; 🏴‍☠️ - Торренты; 🎮 - Игры; 📱 - Обход LTE; 🔧 - Работает, но не всегда; ❓ - Статус неизвестен",
         "# profile-web-page-url: https://github.com/wlunlocker/anti-rkn",
         "# support-url: https://t.me/wlunlocker",
         f"# last-update: {today}",
