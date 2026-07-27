@@ -120,7 +120,7 @@ def parse_key_info(vless_url: str):
         symbol = "⚡📱"
     elif country == "Европа":
         symbol = "⚡📺"
-    elif country in ["Франция", "Германия"]:
+    elif country in ["Франция", "Германия", "Швеция",]:
         symbol = "⚡🤖"
     elif country in ["Нидерланды", "Финляндия", "Канада", "Эстония"]:
         symbol = "⚡"
